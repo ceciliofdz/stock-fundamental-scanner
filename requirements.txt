@@ -1,0 +1,11 @@
+httpx
+pydantic
+pydantic-settings
+pyyaml
+pandas
+python-dotenv
+tenacity
+tabulate
+pytest
+pytest-mock
+streamlit

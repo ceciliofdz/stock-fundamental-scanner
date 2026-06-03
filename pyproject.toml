@@ -1,0 +1,27 @@
+[project]
+name = "stock-fundamental-scanner"
+version = "0.1.0"
+description = "A lean fundamental scanner for daily stock trading preparation."
+authors = [{ name = "Gemini CLI" }]
+requires-python = ">=3.11"
+dependencies = [
+    "httpx",
+    "pydantic",
+    "pydantic-settings",
+    "pyyaml",
+    "pandas",
+    "python-dotenv",
+    "tenacity",
+    "tabulate",
+    "streamlit"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-mock"
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
