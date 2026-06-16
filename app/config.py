@@ -6,9 +6,11 @@ class Settings(BaseSettings):
     # API Keys
     marketaux_api_key: str = Field(alias="MARKETAUX_API_KEY")
     finnhub_api_key: str = Field(alias="FINNHUB_API_KEY")
+    alpha_vantage_api_key: str = Field(default="", alias="ALPHA_VANTAGE_API_KEY")
     
     # SEC EDGAR Requirements
     sec_user_agent: str = Field(alias="SEC_USER_AGENT")
+
     
     # Scanner Settings
     output_dir: Path = Field(default=Path("output"), alias="OUTPUT_DIR")

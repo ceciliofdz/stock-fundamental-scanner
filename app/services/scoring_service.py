@@ -38,16 +38,30 @@ class ScoringService:
             score += 5
             reasons.append(f"{result.news_count} news articles in lookback")
 
-        # Sentiment rules
-        if result.avg_sentiment is not None:
-            abs_sent = abs(result.avg_sentiment)
-            sentiment_type = "positive" if result.avg_sentiment > 0 else "negative"
-            if abs_sent >= 0.35:
+        # Sentiment rules — use time-weighted score; only reward positive catalysts
+        sentiment_score = result.weighted_sentiment if result.weighted_sentiment is not None else result.avg_sentiment
+        confidence = result.sentiment_confidence or 0.0
+
+        if sentiment_score is not None and confidence >= 0.4:
+            label = result.sentiment_label or "neutral"
+            trend_suffix = ""
+            if result.sentiment_trend == "improving":
+                trend_suffix = ", improving"
+            elif result.sentiment_trend == "declining":
+                trend_suffix = ", declining"
+
+            if label == "very_positive":
                 score += 10
-                reasons.append(f"strongly {sentiment_type} news sentiment ({result.avg_sentiment:.2f})")
-            elif abs_sent >= 0.20:
-                score += 5
-                reasons.append(f"moderate {sentiment_type} news sentiment ({result.avg_sentiment:.2f})")
+                reasons.append(f"very positive news sentiment ({sentiment_score:.2f}{trend_suffix})")
+            elif label == "positive":
+                score += 7
+                reasons.append(f"positive news sentiment ({sentiment_score:.2f}{trend_suffix})")
+            elif label == "very_negative" and confidence >= 0.5:
+                score = max(0, score - 5)
+                reasons.append(f"very negative news sentiment ({sentiment_score:.2f}{trend_suffix})")
+            elif label == "negative" and confidence >= 0.5:
+                score = max(0, score - 3)
+                reasons.append(f"negative news sentiment ({sentiment_score:.2f}{trend_suffix})")
 
         # Clamp score
         final_score = max(0, min(100, score))

@@ -7,7 +7,7 @@ from app.models import WatchlistSymbol, TickerResult
 from app.services.watchlist_service import WatchlistService
 from app.services.scanner_service import ScannerService
 from app.services.scoring_service import ScoringService
-from app.providers.news_marketaux import MarketauxProvider
+from app.providers.news_provider import CompositeNewsProvider
 from app.providers.earnings_finnhub import FinnhubEarningsProvider
 from app.providers.filings_sec import SECProvider
 from app.exceptions import WatchlistError
@@ -17,7 +17,10 @@ class GUIAdapterService:
         self.settings = get_settings()
         
         # Initialize providers
-        self.news_provider = MarketauxProvider(api_key=self.settings.marketaux_api_key)
+        self.news_provider = CompositeNewsProvider(
+            alpha_vantage_key=self.settings.alpha_vantage_api_key,
+            marketaux_key=self.settings.marketaux_api_key
+        )
         self.earnings_provider = FinnhubEarningsProvider(api_key=self.settings.finnhub_api_key)
         self.filings_provider = SECProvider(user_agent=self.settings.sec_user_agent)
         
@@ -77,7 +80,27 @@ class GUIAdapterService:
                 "symbol": r.symbol,
                 "score": r.score,
                 "news_count": r.news_count,
+                # keep raw numeric values for cards and logic
                 "avg_sentiment": round(r.avg_sentiment, 2) if r.avg_sentiment is not None else None,
+                "weighted_sentiment": round(r.weighted_sentiment, 2) if r.weighted_sentiment is not None else None,
+                "sentiment_label": r.sentiment_label or "",
+                "sentiment_trend": r.sentiment_trend or "",
+                # display-friendly versions for the table
+                "weighted_sentiment_display": f"{r.weighted_sentiment:.2f}" if r.weighted_sentiment is not None else "",
+                "sentiment_label_display": ("Muy positivo" if r.sentiment_label == "very_positive" else
+                                             "Positivo" if r.sentiment_label == "positive" else
+                                             "Neutral" if r.sentiment_label == "neutral" else
+                                             "Negativo" if r.sentiment_label == "negative" else
+                                             "Muy negativo" if r.sentiment_label == "very_negative" else
+                                             "Sin datos"),
+                "sentiment_trend_display": ("Mejorando" if r.sentiment_trend == "improving" else
+                                             "Empeorando" if r.sentiment_trend == "declining" else
+                                             "Estable" if r.sentiment_trend == "stable" else
+                                             "N/A"),
+                "sentiment_confidence": r.sentiment_confidence,
+                "positive_news": r.positive_news_count,
+                "negative_news": r.negative_news_count,
+                "neutral_news": r.neutral_news_count,
                 "earnings": "Today" if r.has_earnings_today else ("Tomorrow" if r.has_earnings_tomorrow else "No"),
                 "latest_filing": r.latest_filing_type or "None",
                 "latest_filing_at": r.latest_filing_at.strftime("%Y-%m-%d %H:%M") if r.latest_filing_at else "",

@@ -12,6 +12,7 @@ class NewsArticle(BaseModel):
     source: str
     url: str
     sentiment_score: float | None = None
+    relevance_score: float = 1.0
     summary: str | None = None
 
 class EarningsEvent(BaseModel):
@@ -35,6 +36,13 @@ class TickerResult(BaseModel):
     # Derived fields
     news_count: int = 0
     avg_sentiment: float | None = None
+    weighted_sentiment: float | None = None
+    sentiment_label: str | None = None
+    sentiment_trend: str | None = None
+    sentiment_confidence: float | None = None
+    positive_news_count: int = 0
+    negative_news_count: int = 0
+    neutral_news_count: int = 0
     has_earnings_today: bool = False
     has_earnings_tomorrow: bool = False
     latest_filing_type: str | None = None

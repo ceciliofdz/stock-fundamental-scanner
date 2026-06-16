@@ -1,10 +1,11 @@
 import logging
 from datetime import datetime, timezone
 from app.models import WatchlistSymbol, TickerResult, NewsArticle, EarningsEvent, FilingEvent
-from app.providers.news_marketaux import MarketauxProvider
+from app.providers.news_provider import CompositeNewsProvider
 from app.providers.earnings_finnhub import FinnhubEarningsProvider
 from app.providers.filings_sec import SECProvider
 from app.services.scoring_service import ScoringService
+from app.services.sentiment_service import SentimentService
 from app.utils.time_utils import is_today, is_tomorrow
 
 logger = logging.getLogger(__name__)
@@ -12,17 +13,19 @@ logger = logging.getLogger(__name__)
 class ScannerService:
     def __init__(
         self,
-        news_provider: MarketauxProvider,
+        news_provider: CompositeNewsProvider,
         earnings_provider: FinnhubEarningsProvider,
         filings_provider: SECProvider,
         scoring_service: ScoringService,
         lookback_hours_news: int,
-        lookback_hours_filings: int
+        lookback_hours_filings: int,
+        sentiment_service: SentimentService | None = None,
     ):
         self.news_provider = news_provider
         self.earnings_provider = earnings_provider
         self.filings_provider = filings_provider
         self.scoring_service = scoring_service
+        self.sentiment_service = sentiment_service or SentimentService()
         self.lookback_hours_news = lookback_hours_news
         self.lookback_hours_filings = lookback_hours_filings
 
@@ -66,9 +69,7 @@ class ScannerService:
 
             # 3. Compute derived fields
             news_count = len(news)
-            
-            sentiments = [n.sentiment_score for n in news if n.sentiment_score is not None]
-            avg_sentiment = sum(sentiments) / len(sentiments) if sentiments else None
+            sentiment = self.sentiment_service.analyze(news)
             
             ticker_earnings = earnings_map.get(symbol, [])
             has_earnings_today = any(is_today(e.event_date) for e in ticker_earnings)
@@ -86,7 +87,14 @@ class ScannerService:
                 earnings=ticker_earnings,
                 filings=filings,
                 news_count=news_count,
-                avg_sentiment=avg_sentiment,
+                avg_sentiment=sentiment.avg_sentiment,
+                weighted_sentiment=sentiment.weighted_sentiment,
+                sentiment_label=sentiment.label,
+                sentiment_trend=sentiment.trend,
+                sentiment_confidence=sentiment.confidence,
+                positive_news_count=sentiment.positive_count,
+                negative_news_count=sentiment.negative_count,
+                neutral_news_count=sentiment.neutral_count,
                 has_earnings_today=has_earnings_today,
                 has_earnings_tomorrow=has_earnings_tomorrow,
                 latest_filing_type=latest_filing.form_type if latest_filing else None,

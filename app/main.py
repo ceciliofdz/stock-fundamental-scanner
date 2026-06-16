@@ -5,7 +5,7 @@ from app.services.watchlist_service import WatchlistService
 from app.services.scanner_service import ScannerService
 from app.services.scoring_service import ScoringService
 from app.services.report_service import ReportService
-from app.providers.news_marketaux import MarketauxProvider
+from app.providers.news_provider import CompositeNewsProvider
 from app.providers.earnings_finnhub import FinnhubEarningsProvider
 from app.providers.filings_sec import SECProvider
 from app.exceptions import ScannerError
@@ -24,7 +24,10 @@ def main():
         settings = get_settings()
         
         # 2. Initialize Providers
-        news_provider = MarketauxProvider(api_key=settings.marketaux_api_key)
+        news_provider = CompositeNewsProvider(
+            alpha_vantage_key=settings.alpha_vantage_api_key,
+            marketaux_key=settings.marketaux_api_key
+        )
         earnings_provider = FinnhubEarningsProvider(api_key=settings.finnhub_api_key)
         filings_provider = SECProvider(user_agent=settings.sec_user_agent)
         
